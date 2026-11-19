@@ -1,4 +1,4 @@
-package com.sbguard.vector
+package io.github.ibralyam.sbhider
 
 import android.app.Activity
 import android.content.SharedPreferences
@@ -21,16 +21,23 @@ import android.widget.ListView
 import android.widget.Switch
 import android.widget.TextView
 
-/** Manager UI: pilih aplikasi yang status bar-nya disembunyikan. */
+/** Manager UI: pilih aplikasi (user maupun sistem) yang status bar-nya disembunyikan. */
 class MainActivity : Activity() {
 
-    private class AppItem(val pkg: String, val label: String, val icon: Drawable)
+    private class AppItem(
+        val pkg: String,
+        val label: String,
+        val icon: Drawable,
+        val launchable: Boolean,
+        val system: Boolean,
+    )
 
     private lateinit var prefs: SharedPreferences
     private val allApps = ArrayList<AppItem>()
     private val shown = ArrayList<AppItem>()
     private val selected = LinkedHashSet<String>()
     private var query = ""
+    private var showAll = false
     private var prefsReadable = true
     private lateinit var adapter: AppAdapter
 
@@ -60,15 +67,16 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(12), dp(16), dp(8))
         }
 
-        val status = TextView(this).apply {
-            textSize = 14f
-            text = when {
-                !ModuleState.isActive() -> "Modul belum aktif. Aktifkan di Vector lalu pilih scope aplikasi."
-                !prefsReadable -> "Modul aktif, tetapi pengaturan tidak bisa dibaca hook."
-                else -> "Modul aktif. Force stop aplikasi setelah mengubah pilihan."
-            }
-        }
-        root.addView(status)
+        root.addView(
+            TextView(this).apply {
+                textSize = 14f
+                text = when {
+                    !ModuleState.isActive() -> "Modul belum aktif. Aktifkan di Vector lalu pilih scope aplikasi."
+                    !prefsReadable -> "Modul aktif, tetapi pengaturan tidak bisa dibaca hook."
+                    else -> "Modul aktif. Force stop aplikasi setelah mengubah pilihan."
+                }
+            },
+        )
 
         root.addView(
             Switch(this).apply {
@@ -85,6 +93,16 @@ class MainActivity : Activity() {
                 isChecked = prefs.getBoolean(Prefs.KEY_SYSTEM_WATCHDOG, true)
                 setOnCheckedChangeListener { _, on ->
                     prefs.edit().putBoolean(Prefs.KEY_SYSTEM_WATCHDOG, on).apply()
+                }
+            },
+        )
+        root.addView(
+            Switch(this).apply {
+                text = "Tampilkan semua paket (termasuk tanpa ikon)"
+                isChecked = showAll
+                setOnCheckedChangeListener { _, on ->
+                    showAll = on
+                    applyFilter()
                 }
             },
         )
@@ -128,12 +146,21 @@ class MainActivity : Activity() {
             pm.getInstalledApplications(0)
         }
 
+    /** Memuat semua paket terpasang: aplikasi user dan aplikasi sistem. */
     private fun loadApps() {
         Thread {
             val pm = packageManager
             val items = installedApps(pm)
-                .filter { it.packageName != packageName && pm.getLaunchIntentForPackage(it.packageName) != null }
-                .map { AppItem(it.packageName, it.loadLabel(pm).toString(), it.loadIcon(pm)) }
+                .filter { it.packageName != packageName }
+                .map {
+                    AppItem(
+                        pkg = it.packageName,
+                        label = it.loadLabel(pm).toString(),
+                        icon = it.loadIcon(pm),
+                        launchable = pm.getLaunchIntentForPackage(it.packageName) != null,
+                        system = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
+                    )
+                }
             runOnUiThread {
                 allApps.clear()
                 allApps.addAll(items)
@@ -145,6 +172,7 @@ class MainActivity : Activity() {
     private fun applyFilter() {
         val q = query.lowercase()
         val filtered = allApps
+            .filter { showAll || it.launchable || it.pkg in selected }
             .filter { q.isEmpty() || it.label.lowercase().contains(q) || it.pkg.lowercase().contains(q) }
             .sortedWith(compareByDescending<AppItem> { it.pkg in selected }.thenBy { it.label.lowercase() })
         shown.clear()
@@ -163,7 +191,8 @@ class MainActivity : Activity() {
             (row.getChildAt(0) as ImageView).setImageDrawable(item.icon)
             val texts = row.getChildAt(1) as LinearLayout
             (texts.getChildAt(0) as TextView).text = item.label
-            (texts.getChildAt(1) as TextView).text = item.pkg
+            (texts.getChildAt(1) as TextView).text =
+                if (item.system) "${item.pkg} · sistem" else item.pkg
             (row.getChildAt(2) as CheckBox).isChecked = item.pkg in selected
             return row
         }

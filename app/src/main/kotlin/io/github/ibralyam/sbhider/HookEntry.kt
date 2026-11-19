@@ -1,4 +1,4 @@
-package com.sbguard.vector
+package io.github.ibralyam.sbhider
 
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XC_MethodReplacement

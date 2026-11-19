@@ -1,4 +1,4 @@
-package com.sbguard.vector
+package io.github.ibralyam.sbhider
 
 import android.app.Activity
 import android.graphics.Insets

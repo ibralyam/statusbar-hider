@@ -1,4 +1,4 @@
-package com.sbguard.vector
+package io.github.ibralyam.sbhider
 
 import android.os.Build
 import android.os.Handler
@@ -26,7 +26,7 @@ internal object SystemServerHooks {
     private val hideMethodNames = arrayOf("hideTransient", "abortTransient")
 
     private val worker: Handler by lazy {
-        val thread = HandlerThread("sbguard-autohide").also { it.start() }
+        val thread = HandlerThread("sbhider-autohide").also { it.start() }
         Handler(thread.looper)
     }
     private val pending = AtomicReference<Runnable?>(null)

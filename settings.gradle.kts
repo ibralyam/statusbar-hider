@@ -18,5 +18,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "StatusBarGuard"
+rootProject.name = "StatusBarHider"
 include(":app")

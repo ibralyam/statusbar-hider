@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.sbguard.vector"
+    namespace = "io.github.ibralyam.sbhider"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.sbguard.vector"
+        applicationId = "io.github.ibralyam.sbhider"
         minSdk = 31
         targetSdk = 34
         versionCode = 1

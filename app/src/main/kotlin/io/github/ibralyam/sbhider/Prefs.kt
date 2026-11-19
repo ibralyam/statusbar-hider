@@ -1,8 +1,8 @@
-package com.sbguard.vector
+package io.github.ibralyam.sbhider
 
 /** Konstanta bersama antara Manager UI (menulis) dan hook (membaca via XSharedPreferences). */
 object Prefs {
-    const val MODULE_PKG = "com.sbguard.vector"
+    const val MODULE_PKG = "io.github.ibralyam.sbhider"
     const val FILE = "config"
 
     /** Set<String> nama paket target. */

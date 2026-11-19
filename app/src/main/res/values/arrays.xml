@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Scope rekomendasi: System Framework (untuk watchdog 3 detik). -->
+    <!-- Scope rekomendasi: System Framework (watchdog 3 detik) + aplikasi sistem/Google umum. -->
     <string-array name="xposed_scope">
         <item>android</item>
+        <item>com.google.android.googlequicksearchbox</item>
+        <item>com.android.chrome</item>
+        <item>com.google.android.youtube</item>
+        <item>com.google.android.apps.youtube.music</item>
+        <item>com.google.android.apps.maps</item>
+        <item>com.google.android.apps.photos</item>
+        <item>com.google.android.gm</item>
+        <item>com.google.android.apps.messaging</item>
+        <item>com.google.android.dialer</item>
+        <item>com.android.vending</item>
+        <item>com.android.settings</item>
+        <item>com.sec.android.app.sbrowser</item>
     </string-array>
 </resources>

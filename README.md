@@ -1,16 +1,16 @@
-# StatusBar Guard (modul Vector / LSPosed)
+# StatusBar Hider (modul Vector / LSPosed)
 
 Menyembunyikan status bar per-aplikasi untuk mengurangi burn-in. Status bar hanya muncul
 sementara saat swipe dari bezel atas, lalu hilang lagi setelah 3 detik.
 
 Status: **belum dikompilasi dan belum diuji di perangkat.** Semua nama class/method internal AOSP
 di bawah ditulis dari pengetahuan saya tentang source AOSP dan dipasang dengan pola gagal-aman.
-Verifikasi lewat log Vector (cari tag `[SBGuard]`).
+Verifikasi lewat log Vector (cari tag `[SBHider]`).
 
 ## Cara pakai
 
 1. Buka folder ini di Android Studio (atau jalankan `gradle wrapper` lalu `./gradlew assembleRelease`).
-2. Pasang APK. Buka Vector, aktifkan modul **StatusBar Guard**.
+2. Pasang APK. Buka Vector, aktifkan modul **StatusBar Hider**.
 3. Scope: centang **System Framework** (untuk watchdog) dan **setiap aplikasi target**.
 4. Buka Manager UI modul, centang aplikasi yang mau disembunyikan status bar-nya.
 5. Force stop aplikasi target. Pilihan dibaca saat proses aplikasi dimulai.
@@ -44,7 +44,7 @@ letakkan `XposedBridge-api-82.jar` di `app/libs/` dan ganti dependency dengan
 - Edge-to-edge wajib di Android 15/16 tidak menjadi masalah karena modul memakai API insets, bukan
   opt-out edge-to-edge.
 - Bila satu lapisan gagal, lapisan lain tetap aktif. Hasil per lapisan dicatat, contoh:
-  `[SBGuard] com.zhiliaoapp.musically sdk=35: +layoutParams +insetsShow +behavior +lifecycle`.
+  `[SBHider] com.zhiliaoapp.musically sdk=35: +layoutParams +insetsShow +behavior +lifecycle`.
 
 ### Catatan per versi
 

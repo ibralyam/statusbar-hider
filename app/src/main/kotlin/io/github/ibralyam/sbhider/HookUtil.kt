@@ -1,4 +1,4 @@
-package com.sbguard.vector
+package io.github.ibralyam.sbhider
 
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -7,11 +7,11 @@ import java.util.concurrent.ConcurrentHashMap
 internal object SbLog {
     private val seen = ConcurrentHashMap.newKeySet<String>()
 
-    fun i(msg: String) = XposedBridge.log("[SBGuard] $msg")
+    fun i(msg: String) = XposedBridge.log("[SBHider] $msg")
 
     /** Log error sekali per tag agar logcat tidak banjir. */
     fun e(tag: String, t: Throwable) {
-        if (seen.add(tag)) XposedBridge.log("[SBGuard] $tag gagal: $t")
+        if (seen.add(tag)) XposedBridge.log("[SBHider] $tag gagal: $t")
     }
 }
 
