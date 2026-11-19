@@ -1,77 +1,58 @@
-# StatusBar Hider (modul Vector / LSPosed)
+# StatusBar Hider (Vector / LSPosed module)
 
-Menyembunyikan status bar per-aplikasi untuk mengurangi burn-in. Status bar hanya muncul
-sementara saat swipe dari bezel atas, lalu hilang lagi setelah 3 detik.
+Hides the status bar per app to help reduce burn-in. The status bar only shows for a moment when you swipe from the top edge, then hides again after 3 seconds.
 
-Status: **belum dikompilasi dan belum diuji di perangkat.** Semua nama class/method internal AOSP
-di bawah ditulis dari pengetahuan saya tentang source AOSP dan dipasang dengan pola gagal-aman.
-Verifikasi lewat log Vector (cari tag `[SBHider]`).
+Status: **I'm only testing this on an AOSP ROM.** All internal AOSP class and method names below come from what I know about AOSP source code and use a fail-safe setup.
+Check Vector logs to verify (look for the `[SBHider]` tag).
 
-## Cara pakai
+## How to use
 
-1. Buka folder ini di Android Studio (atau jalankan `gradle wrapper` lalu `./gradlew assembleRelease`).
-2. Pasang APK. Buka Vector, aktifkan modul **StatusBar Hider**.
-3. Scope: centang **System Framework** (untuk watchdog) dan **setiap aplikasi target**.
-4. Buka Manager UI modul, centang aplikasi yang mau disembunyikan status bar-nya.
-5. Force stop aplikasi target. Pilihan dibaca saat proses aplikasi dimulai.
+1. Open this folder in Android Studio (or run the gradle wrapper, then `./gradlew assembleRelease`).
+2. Install the APK. Open Vector and turn on the **StatusBar Hider** module.
+3. Scope: check **System Framework** (for the watchdog) and **each target app**.
+4. Open the module Manager UI and check the apps where you want to hide the status bar.
+5. Force stop the target app. App choices are read when the app process starts.
 
-Catatan repositori: Xposed API 82 diambil dari `https://api.xposed.info/`. Bila gagal diunduh,
-letakkan `XposedBridge-api-82.jar` di `app/libs/` dan ganti dependency dengan
-`compileOnly(files("libs/XposedBridge-api-82.jar"))`.
+Repo note: Xposed API 82 comes from `https://api.xposed.info/`. If download fails, put `XposedBridge-api-82.jar` in `app/libs/` and change the dependency to `compileOnly(files("libs/XposedBridge-api-82.jar"))`.
 
-## Arsitektur multi-layer
+## Multi-layer design
 
-| Lapisan | Titik hook | Fungsi |
+| Layer | Hook point | What it does |
 |---|---|---|
-| L1 app | `ViewRootImpl.setLayoutParams` | Memaksa `FLAG_FULLSCREEN` dan `layoutInDisplayCutoutMode = ALWAYS` pada window utama. Semua jalur (`Window.setFlags`, `setAttributes`, `updateViewLayout`) lewat sini, jadi reset flag per halaman tidak berpengaruh. |
-| L2 app | `InsetsController.show` | Membuang bit `statusBars()` dari permintaan show milik app (TikTok, Instagram, browser). Bit nav bar dan IME tetap lewat. |
-| L2 app | `InsetsController.setSystemBarsBehavior` | Memaksa `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE` supaya bar hasil swipe bersifat transient. |
-| L3 app | `Activity.onPostCreate/onResume/onWindowFocusChanged` | `hide(statusBars())` di awal dan ditegakkan ulang. Tidak ada kedip status bar saat app dibuka. |
-| L4 app | `View.setSystemUiVisibility` | Jalur lama `SYSTEM_UI_FLAG_*` (WebView, app lama). |
-| L5 app | `WindowInsets.getInsets` | Mengisi inset atas dengan `safeInsetTop` notch saat status bar hilang. |
-| L6 system_server | `InsetsPolicy.showTransient` | Watchdog: menyembunyikan bar transient tepat `autohide_ms` (default 3000) setelah ditarik, hanya bila app fokus adalah target. |
+| L1 app | `ViewRootImpl.setLayoutParams` | Forces `FLAG_FULLSCREEN` and `layoutInDisplayCutoutMode = ALWAYS` on the main window. Paths like `Window.setFlags`, `setAttributes`, and `updateViewLayout` go through here, so per-screen flag resets do not stick. |
+| L2 app | `InsetsController.show` | Removes the `statusBars()` bit from app show calls (TikTok, Instagram, browsers). Nav bar and IME bits still go through. |
+| L2 app | `InsetsController.setSystemBarsBehavior` | Forces `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE` so bars shown by a swipe act as transient bars. |
+| L3 app | `Activity.onPostCreate/onResume/onWindowFocusChanged` | Calls `hide(statusBars())` early and re-applies it. Helps stop status bar flicker when opening an app. |
+| L4 app | `View.setSystemUiVisibility` | Handles old `SYSTEM_UI_FLAG_*` calls (WebView, older apps). |
+| L5 app | `WindowInsets.getInsets` | Fills the top inset with notch `safeInsetTop` when the status bar is hidden. |
+| L6 system_server | `InsetsPolicy.showTransient` | Watchdog: hides transient bars after `autohide_ms` (default 3000 ms) from pull-down, only if the focused app is in your target list. |
 
-### Mengapa tahan terhadap perbedaan ROM
+### Why it holds up across different ROMs
 
-- L1 dan L2 memakai class framework umum (`ViewRootImpl`, `InsetsController`) yang berada di
-  proses aplikasi. OEM jarang memodifikasi jalur ini, karena Samsung, Xiaomi, OPPO dan Vivo
-  memodifikasi SystemUI dan policy di system_server.
-- `hookAllMethods` menutup perbedaan signature antar versi (mis. `show(int, boolean)` di API 31-32
-  dan `show(int, boolean, ImeTracker.Token)` di API 33+).
-- Swipe asli dari bezel dideteksi dan diproses `InsetsPolicy` di system_server. Menurut pembacaan
-  saya, jalur itu tidak memanggil `InsetsController.show` dari sisi app, jadi tidak ikut terblokir.
-  Ini perlu dikonfirmasi di perangkat.
-- Edge-to-edge wajib di Android 15/16 tidak menjadi masalah karena modul memakai API insets, bukan
-  opt-out edge-to-edge.
-- Bila satu lapisan gagal, lapisan lain tetap aktif. Hasil per lapisan dicatat, contoh:
-  `[SBHider] com.zhiliaoapp.musically sdk=35: +layoutParams +insetsShow +behavior +lifecycle`.
+- L1 and L2 use common framework classes (`ViewRootImpl`, `InsetsController`) inside the app process. OEMs rarely change these paths, since Samsung, Xiaomi, OPPO, and Vivo mostly change SystemUI and policy inside system_server.
+- `hookAllMethods` covers signature differences across versions (for example `show(int, boolean)` on API 31–32 and `show(int, boolean, ImeTracker.Token)` on API 33+).
+- Real swipes from the top edge are caught and handled by `InsetsPolicy` in system_server. Based on AOSP source code, that path does not call `InsetsController.show` on the app side, so it should not get blocked. This still needs a real device check.
+- Mandatory edge-to-edge on Android 15/16 is not an issue because this module uses insets APIs instead of opting out of edge-to-edge.
+- If one layer fails, other layers can still work. Per-layer results are logged, for example: `[SBHider] com.zhiliaoapp.musically sdk=35: +layoutParams +insetsShow +behavior +lifecycle`.
 
-### Catatan per versi
+### Notes by Android version
 
-- API 31-32: `InsetsPolicy.mShowingTransientTypes` kemungkinan `IntArray`. Dibaca lewat refleksi, mendukung `int` maupun `IntArray`.
-- API 33-34: `show` bertambah parameter `ImeTracker.Token`. Sudah tercakup.
-- API 35-36: edge-to-edge dipaksa untuk app target SDK 35+. Padding notch ditangani L1 dan L5.
-- API 37: belum menjadi prioritas dan belum ditinjau.
+- API 31–32: `InsetsPolicy.mShowingTransientTypes` may be an `IntArray`. Read via reflection, supporting both `int` and `IntArray`.
+- API 33–34: `show` adds an `ImeTracker.Token` parameter. Already handled.
+- API 35–36: edge-to-edge is forced for apps targeting SDK 35+. Top notch spacing is handled by L1 and L5.
+- API 37: not a priority yet and not reviewed.
 
-## Edge case
+## Edge cases
 
-- **Timer 3 detik presisi:** SystemUI biasanya sudah menyembunyikan bar sekitar 3 detik. L6 menjadwalkan
-  ulang setiap kali `showTransient` dipanggil dan memakai `HandlerThread` sendiri, bukan main thread
-  system_server. Eksekusi hide dilakukan di dalam `mGlobalLock`. Nama method hide dicari lewat
-  `hideTransient`, lalu `abortTransient`. Bila tidak ada, L6 mati sendiri dan dicatat di log.
-- **Notch / cutout:** L1 memaksa `LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS` sehingga tidak ada bilah hitam.
-- **Padding atas:** L5 hanya mengganti hasil `getInsets(statusBars())` yang bernilai 0 dengan
-  `DisplayCutout.safeInsetTop`. Perangkat tanpa notch tidak berubah.
-- **Anti-reset:** L1 menimpa flag di setiap perubahan atribut window, L2 memblokir `show(statusBars())`,
-  L3 menegakkan ulang saat resume dan fokus.
+- **3-second timer accuracy:** SystemUI often hides bars on its own in about 3 seconds. L6 reschedules on every `showTransient` call and uses its own `HandlerThread`, not the main system_server thread. Hiding runs inside `mGlobalLock`. It looks for `hideTransient` first, then `abortTransient`. If neither exists, L6 turns itself off and logs it.
+- **Notch / cutout:** L1 forces `LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS` to avoid black bars.
+- **Top padding:** L5 only replaces a `0` from `getInsets(statusBars())` with `DisplayCutout.safeInsetTop`. Phones with no notch stay as-is.
+- **Anti-reset:** L1 re-applies flags on window attribute changes, L2 blocks `show(statusBars())`, and L3 re-applies on resume and focus.
 
-## Batasan yang diketahui
+## Known limits
 
-- Entry point **libxposed modern (API 100)** belum disertakan. Vector menjalankan modul API legacy 82
-  secara native, jadi satu entry `assets/xposed_init` cukup. Saya tidak menulis entry modern karena
-  tidak bisa memverifikasi signature API-nya tanpa akses ke library.
-- Hook system_server (L6) bergantung pada nama internal `InsetsPolicy`, `mDisplayContent`,
-  `mCurrentFocus`, `mGlobalLock`. Cek log setelah reboot.
-- Memaksa `FLAG_FULLSCREEN` pada app lama non-edge-to-edge membuat konten ikut memakai area status bar.
-- Pilihan aplikasi dibaca saat proses dimulai. Perubahan butuh force stop.
-- `MODE_WORLD_READABLE` hanya berhasil bila modul aktif di Vector. Bila tidak, Manager UI menampilkan peringatan.
+- **Modern libxposed (API 100)** entry point is not included yet. Vector runs legacy API 82 modules natively, so one `assets/xposed_init` entry is enough. I skipped the modern entry because I could not verify its API signatures without the library.
+- The system_server hook (L6) relies on internal names like `InsetsPolicy`, `mDisplayContent`, `mCurrentFocus`, and `mGlobalLock`. Check logs after reboot.
+- Forcing `FLAG_FULLSCREEN` on older non-edge-to-edge apps makes content use the status bar area too.
+- App selection is read when the process starts. Changes need a force stop.
+- `MODE_WORLD_READABLE` only works when the module is active in Vector. Otherwise, the Manager UI shows a warning.
