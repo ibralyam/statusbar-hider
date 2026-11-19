@@ -17,6 +17,14 @@ Check Vector logs to verify (look for the `[SBHider]` tag).
 
 Repo note: Xposed API 82 comes from `https://api.xposed.info/`. If download fails, put `XposedBridge-api-82.jar` in `app/libs/` and change the dependency to `compileOnly(files("libs/XposedBridge-api-82.jar"))`.
 
+## Preview
+
+<!-- Drag and drop screenshots here, or paste the uploaded image links below -->
+<img width="280" alt="photo_6339085706008924909_w" src="https://github.com/user-attachments/assets/e231fb40-edc0-4349-8ed7-5ee2bfce3329" />
+<img width="280" alt="Status bar hidden in app" src="https://github.com/user-attachments/assets/41169ca4-66f1-4735-88f6-7902fc446597" />
+
+
+
 ## Multi-layer design
 
 | Layer | Hook point | What it does |
