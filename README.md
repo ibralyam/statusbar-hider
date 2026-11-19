@@ -2,6 +2,8 @@
 
 Hides the status bar per app to help reduce burn-in. The status bar only shows for a moment when you swipe from the top edge, then hides again after 3 seconds.
 
+Supports **Android 12–16** based on my tests.
+
 Status: **I'm only testing this on an AOSP ROM.** All internal AOSP class and method names below come from what I know about AOSP source code and use a fail-safe setup.
 Check Vector logs to verify (look for the `[SBHider]` tag).
 
@@ -9,8 +11,8 @@ Check Vector logs to verify (look for the `[SBHider]` tag).
 
 1. Open this folder in Android Studio (or run the gradle wrapper, then `./gradlew assembleRelease`).
 2. Install the APK. Open Vector and turn on the **StatusBar Hider** module.
-3. Scope: check **System Framework** (for the watchdog) and **each target app**.
-4. Open the module Manager UI and check the apps where you want to hide the status bar.
+3. Scope: check **System Framework** (for the watchdog) and **each target app**. In Vector, **Select All** apps is recommended so you do not have to keep switching between the StatusBar Hider app and Vector just to hook new apps.
+4. Open **StatusBar Hider** and check the apps where you want to hide the status bar.
 5. Force stop the target app. App choices are read when the app process starts.
 
 Repo note: Xposed API 82 comes from `https://api.xposed.info/`. If download fails, put `XposedBridge-api-82.jar` in `app/libs/` and change the dependency to `compileOnly(files("libs/XposedBridge-api-82.jar"))`.
