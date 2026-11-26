@@ -4,7 +4,7 @@ Hides the status bar per app to help reduce burn-in. The status bar only shows f
 
 Supports **Android 12–16** based on my tests.
 
-Status: **I'm only testing this on an AOSP ROM.** All internal AOSP class and method names below come from what I know about AOSP source code and use a fail-safe setup.
+Status: **I'm only testing this on an AOSP and ONEUI ROM.** All internal AOSP class and method names below come from what I know about AOSP source code and use a fail-safe setup.
 Check Vector logs to verify (look for the `[SBHider]` tag).
 
 ## How to use
